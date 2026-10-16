@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(app 
     src/main.cpp
+    src/vec2.cpp
 )
 
 target_compile_options(app PRIVATE -Wall -Wextra)

@@ -13,3 +13,12 @@ Vec2 scale(Vec2 v, float s) {
 float length(Vec2 v) {
     return std::sqrt(v.x * v.x + v.y * v.y);
 }
+
+Vec2 subtract(Vec2 a, Vec2 b) {
+    return { a.x - b.x, a.y - b.y };
+}
+
+float dot(Vec2 a, Vec2 b) {
+    return a.x * b.x + a.y * b.y;
+}
+
