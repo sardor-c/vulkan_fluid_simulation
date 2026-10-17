@@ -346,4 +346,4 @@ Vulkan ekranga chizishni boshlaganda, kadrlar monitor chastotasiga (60/144/165 H
 ---
 
 **Oldingi dars:** [01 — Muhit va kompilyatsiya](01_muhit_va_kompilyatsiya.md) ·
-**Keyingi dars:** 03 — GPU va Vulkan qanday ishlaydi *(02-dars tugagach yoziladi)*
+**Keyingi dars:** [03 — GPU va Vulkan qanday ishlaydi](03_gpu_va_vulkan.md)

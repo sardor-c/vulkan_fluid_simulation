@@ -82,9 +82,13 @@ faqat o'sha holat uchun bajaring. Qoida o'zgarmaydi.
 - Windows 11, PowerShell. VS Code + Claude extension.
 - MSYS2 MinGW64: `C:\msys64\mingw64\bin` PATH'da bor. U yerda: g++ 16.2, cmake 4.4, ninja, glslc,
   glslangValidator, spirv-val, GLFW 3 (dynamic, `glfw3.dll`), Vulkan headers (1.4.357) va loader.
-- Validation layer: `C:\msys64\mingw64\bin\VkLayer_khronos_validation.dll`. Yoqish uchun
-  `$env:VK_LAYER_PATH="C:\msys64\mingw64\bin"` kerak. Loader'ning `EOSOverlayVkLayer-Win64.json`
+- Validation layer: `C:\msys64\mingw64\bin\VkLayer_khronos_validation.dll` (+ `.json` manifest).
+  Foydalanuvchi muhitida `VK_ADD_LAYER_PATH=C:\msys64\mingw64\bin` **User** darajasida doimiy
+  o'rnatilgan, shuning uchun layer qo'shimcha sozlamasiz topiladi. `VK_LAYER_PATH` o'rnatilmagan.
+  Registry'da explicit layer yozuvlari yo'q. Loader'ning `EOSOverlayVkLayer-Win64.json`
   topilmadi degan xabari zararsiz (Epic Games overlay'i), e'tibor bermaslik kerak.
+- `libvulkan-1.dll.a` (MSYS2 import kutubxonasi) kengaytma funksiyalarini (masalan,
+  `vkCreateDebugUtilsMessengerEXT`) eksport qilmaydi: ular faqat `vkGetInstanceProcAddr` orqali olinadi.
 - GPU: NVIDIA GeForce RTX 3060 (Vulkan 1.4 drayver), monitor 165 Hz.
 - `../fluid_sim` da uchragan va darslarda ogohlantirish kerak bo'lgan tuzoq: `--target-env=vulkan1.3`
   bilan kompilyatsiya qilinganda GLSL'dagi `discard` `OpDemoteToHelperInvocation` ga aylanadi.
@@ -97,16 +101,49 @@ faqat o'sha holat uchun bajaring. Qoida o'zgarmaydi.
 - **2026-10-16:** `docs/00_yol_xaritasi.md`, `01_muhit_va_kompilyatsiya.md`,
   `02_oyna_va_asosiy_sikl.md`, `lugat.md` va shu `CLAUDE.md` yozildi. Foydalanuvchi hali kod
   yozishni boshlamagan. Papkada faqat `docs/` va `CLAUDE.md` bor.
-- **Keyingi qadam:** foydalanuvchi 01 va 02-darslarni tugatib, VS Code'dagi Claude extension orqali
-  shu papkadan qaytadi. Unda:
-  1. 01–02 natijalarini tekshirish: `CMakeLists.txt` (`find_package(glfw3)`, `-Wall -Wextra`),
-     `src/main.cpp` (GLFW oyna, asosiy sikl, delta time, FPS sarlavhada, Esc callback),
-     `src/vec2.hpp/.cpp` (`add`, `scale`, `length` hamda mashqdagi `subtract`, `dot`).
-     Mashqlar: Space bilan pauza, framebuffer size callback, kursor pozitsiyasi, delta time
-     tajribasi, `glfwWaitEvents` savoli.
-  2. Keyin `docs/03_gpu_va_vulkan.md` ni yozish. Asosan nazariya: CPU va GPU farqi (parallelizm),
-     API → loader → driver → GPU zanjiri, Vulkan obyektlari xaritasi (instance, physical/logical
-     device, queue, surface, swapchain, command buffer, pipeline, buffer, descriptor), nega Vulkan
-     shunchalik batafsil (explicit). Kichik amaliyot: `find_package(Vulkan)`, `Vulkan::Vulkan` ni
-     ulash va `vkEnumerateInstanceVersion` bilan Vulkan versiyasini chiqarish.
-  3. `02_oyna_va_asosiy_sikl.md` pastidagi "Keyingi dars" ni 03-darsga havola qilish.
+- **2026-10-17:** 01–02 tekshirildi. Hamma mashqlar bajarilgan: `CMakeLists.txt` (glfw3,
+  `-Wall -Wextra`, o'zi qo'shgan `CMAKE_EXPORT_COMPILE_COMMANDS` + `.vscode/c_cpp_properties.json`),
+  `main.cpp` (oyna, sikl, dt, FPS, Esc, Space pauza global `isPaused` bilan, framebuffer size
+  callback, kursor, `distance` tajribasi, `glfwWaitEvents`), `vec2` (`add`, `scale`, `length`,
+  `subtract`, `dot`). Kamchiliklar 03-darsning 1-qadamida tuzatishga berildi: `glfwWaitEvents`
+  va `distance` qolib ketgan, FPS 0.5 s oraliqda `frameCount` sifatida chiqadi (yarmi ko'rinadi).
+  Foydalanuvchi K&R qavs uslubini (`int main() {`) va `std::endl` ishlatadi, 03-dars shunga
+  moslandi. "O'zingizni tekshiring" savollariga javob yozmadi.
+  `docs/03_gpu_va_vulkan.md` yozildi, `lugat.md` ga "GPU va Vulkan" bo'limi qo'shildi, 02 → 03
+  havolasi ulandi.
+- **Muhit faktlari (2026-10-17):** `vulkaninfo.exe` System32 da bor (NVIDIA drayveri bilan kelgan).
+  Loader 1.4.341, header 1.4.357, drayver 610.47. `app.exe` System32 dagi `vulkan-1.dll` ni
+  yuklaydi (`PATH` dagi MSYS2 nusxasini emas).
+- **2026-10-18:** 03 tekshirildi. Bajarilgan: 02 commit qilingan (`fb503f8`), `glfwPollEvents`
+  qaytarilgan, `distance` o'chirilgan, FPS `frameCount / (now - fpsTimer)`, intelliSenseMode
+  `windows-gcc-x64`, `#define GLFW_INCLUDE_VULKAN`, `printVulkanVersion()` (makros o'rniga o'zi
+  yozgan maskalar bilan), `glfwVulkanSupported`, kengaytmalar ro'yxatini chiqarish. Kamchiliklar
+  (04-darsning 1–2-qadamlariga kiritildi): (a) 5-mashqdan keyin `Vulkan::Vulkan` qaytarilmagan,
+  build linker'da yiqiladi, `build/app.exe` yo'q; (b) maskalarda birlar soni bittadan kam
+  (`0b111111` 6 ta, `0b111111111` 9 ta, `0b11111111111` 11 ta; kerak 7/10/12), 1.4.341 uchun
+  tasodifan to'g'ri chiqadi; (c) `throw std::runtime_error` dan keyin `glfwTerminate(); return 1;`
+  bajarilmaydigan kod, `catch` yo'q (halokatli tugaydi). 2, 4, 5, 6-mashqlar natijalari va
+  "O'zingizni tekshiring" javoblari yozilmadi.
+  `docs/04_instance_va_validation_layer.md` yozildi. Tanlangan yondashuv: kod hali `main.cpp` da,
+  erkin funksiyalar (`vkCheck`, `isLayerAvailable`, `getRequiredExtensions`, `debugCallback`,
+  `makeDebugMessengerInfo`, `createInstance`, `createDebugMessenger`, `destroyDebugMessenger`),
+  `main` → `try { run(); } catch (const std::exception&)`. Global `const bool enableValidation`.
+  Xatolar exception bilan; `throw` bo'lganda tozalash o'tkazib yuboriladi (darsda ochiq aytilgan,
+  "keyingi darslarda hal qilamiz" deb va'da berilgan → destructor/RAII). Callback xabari
+  `[Vulkan XATO/OGOHLANTIRISH]` formatida, `std::cerr` ga. Lug'atga C++ va Vulkan atamalari qo'shildi.
+- **Keyingi qadam:** foydalanuvchi *"04-dars tayyor"* deb qaytadi. Unda:
+  1. Tekshirish: 03 tuzatishlari (`Vulkan::Vulkan`, maskalar → makroslar, `<cstdlib>` olib
+     tashlangan), `run()` + `try/catch`, `vkCheck`, ikki chaqiruvli `isLayerAvailable` (`strcmp`),
+     `getRequiredExtensions` (`push_back` sikli), `debugCallback` (`VKAPI_ATTR`/`VKAPI_CALL`,
+     `VK_FALSE`), `pNext` ga `debugInfo`, `vkGetInstanceProcAddr`, tozalash tartibi
+     (window → messenger → instance → glfwTerminate). "Ataylab xato" (messenger'ni yo'q qilmaslik →
+     `VUID-vkDestroyInstance-instance-00629`) ko'rilganini so'rash. Mashqlar: layer ro'yxati va
+     `VK_ADD_LAYER_PATH=""`, to'g'ridan-to'g'ri chaqiruv → linker xatosi, `#ifdef NDEBUG` +
+     `build-release/` (`.gitignore` ga qo'shilganmi), `VK_CHECK` (`#x`), INFO/VERBOSE.
+  2. Keyin `docs/05_physical_va_logical_device.md` (yoki shunga yaqin nom): `vkEnumeratePhysicalDevices`
+     (ikki chaqiruv), `VkPhysicalDeviceProperties` (nomi, `apiVersion` ≥ 1.3, deviceType), queue
+     family'lar (graphics + compute; present 06-darsda), `VkDeviceCreateInfo`,
+     `VkPhysicalDeviceVulkan13Features` (`dynamicRendering`, `synchronization2`, keyinroq
+     `shaderDemoteToHelperInvocation`) `pNext` orqali, `vkGetDeviceQueue`. `main.cpp` juda
+     kattalashadi: Vulkan kodini alohida faylga (`vulkan_context.hpp/.cpp` yoki shunga o'xshash)
+     va struct'ga ko'chirishni shu darsda boshlash, destructor bilan tozalash muammosini hal qilish.

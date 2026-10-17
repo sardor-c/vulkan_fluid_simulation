@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(glfw3 REQUIRED)
+find_package(Vulkan REQUIRED)
 
 add_executable(app 
     src/main.cpp
@@ -13,6 +14,6 @@ add_executable(app
 )
 
 
-target_link_libraries(app PRIVATE glfw)
+target_link_libraries(app PRIVATE glfw Vulkan::Vulkan)
 target_compile_options(app PRIVATE -Wall -Wextra)
 
