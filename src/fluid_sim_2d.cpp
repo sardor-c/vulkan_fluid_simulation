@@ -9,7 +9,6 @@ namespace {
     constexpr uint32_t WIDTH = 1280;
     constexpr uint32_t HEIGHT = 720;
 
-    constexpr const char* debugHeader = "----[ DEBUG ]----";
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
