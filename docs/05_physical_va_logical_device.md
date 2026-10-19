@@ -13,6 +13,11 @@ Dars oxirida:
 04-darsda *"xato bo'lganda tozalash ishlamaydi, keyingi darslarda hal qilamiz"* degan edik.
 Bu darsda sizning `FluidSimulation2D` klassingiz yordamida shu muammoni hal qilamiz.
 
+> **MacBook'da bajarayotgan bo'lsangiz:** macOS'da Vulkan Metal ustida, **MoltenVK** orqali
+> ishlaydi. Darsdagi misollar (RTX 3060, queue family jadvali) Windows kompyuteringizdan olingan,
+> Mac'da natija boshqacha bo'ladi. **macOS** deb belgilangan eslatmalarga e'tibor bering. Loyiha
+> Mac'da hali build bo'lmayotgan bo'lsa, avval shuni hal qiling (Claude'dan yordam so'rang).
+
 ---
 
 ## Nazariya
@@ -54,6 +59,10 @@ Kompyuteringizda bitta GPU bor (`NVIDIA GeForce RTX 3060`). Lekin kodni xuddi bi
 bordek yozamiz: noutbukda odatda ikkita bo'ladi (protsessor ichidagi integrated va alohida
 diskret GPU), va biz **diskretini** afzal ko'ramiz.
 
+> **macOS:** Apple Silicon (M1, M2, ...) da GPU protsessor bilan bitta chip ichida turadi,
+> shuning uchun uning `deviceType` i `INTEGRATED_GPU` bo'ladi. Kodimiz diskret GPU topilmasa,
+> mos kelgan istalganini tanlaydi.
+
 ### 3. Queue family: navbatlar oilasi
 
 03-darsda queue'ni *"buyurtma uzatiladigan deraza"* degan edik. GPU'da bunday derazalar ko'p
@@ -79,6 +88,9 @@ Bizga **chizish** (zarrachalar) va **hisob-kitob** (fizika) kerak. Eng oddiy yo'
 ham bajara oladigan **bitta** navbat olish. Sizda bu family 0. Alohida compute family (2) dan
 foydalanish ("async compute") — murakkab optimizatsiya, bizga kerak emas: bitta navbat bilan
 sinxronizatsiya ancha sodda bo'ladi.
+
+> **macOS:** oilalar soni va tarkibi boshqacha bo'ladi. O'zingiznikini 2-mashqda chiqarasiz.
+> Kod kerakli indeksni o'zi qidiradi, shuning uchun unda hech narsa o'zgarmaydi.
 
 Kerakli family'ni topishda 03–04-darslardagi bit operatsiyalari qo'l keladi:
 
@@ -473,6 +485,21 @@ void FluidSimulation2D::createLogicalDevice() {
 > (`enabledLayerCount`). Hozirgi Vulkan'da device layer'lari e'tiborga olinmaydi: layer'lar faqat
 > instance'da yoqiladi. Bu maydonlarni 0 qoldiring.
 
+> **macOS: `VK_KHR_portability_subset`.** MoltenVK Vulkan'ni to'liq emas, "portability subset"
+> sifatida beradi: Metal'da yo'q bo'lgan ba'zi kichik imkoniyatlar ishlamaydi. Bunday GPU
+> `VK_KHR_portability_subset` device kengaytmasini e'lon qiladi va qoida bo'yicha uni **yoqish
+> majburiy**. Yoqmasangiz, validation layer `VUID-VkDeviceCreateInfo-pProperties-04451` xatosini
+> beradi. 04-darsda instance uchun portability flag'ini qo'ygansiz (`#ifdef __APPLE__`). Bu esa
+> uning device'dagi jufti. Qanday qilish kerak:
+> 1. `vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, ...)` bilan device
+>    kengaytmalari ro'yxatini oling (ikki chaqiruvli usul, `checkRequiredExtensions` ga o'xshash).
+> 2. Ro'yxatda `"VK_KHR_portability_subset"` bo'lsa, uni `std::vector<const char*>` ga qo'shing va
+>    `enabledExtensionCount` / `ppEnabledExtensionNames` ga bering.
+>
+> Nomni matn bilan yozing: uning makrosi `vulkan_beta.h` da turadi va odatda e'lon qilinmaydi.
+> Bu tekshiruv Windows'da ham zarar qilmaydi: NVIDIA bu kengaytmani e'lon qilmaydi, ro'yxat esa
+> bo'sh qoladi.
+
 ### 8-qadam: hammasini ulang
 
 `initVulkan()`:
@@ -505,6 +532,11 @@ GPU: NVIDIA GeForce RTX 3060 | diskret | mos
 Oyna avvalgidek ochiladi. Yopganda hech qanday `[ ERROR ]` yoki `[ WARNING ]` xabari chiqmasligi
 kerak.
 
+> **macOS:** GPU nomi (masalan, `Apple M2`), turi (integrated) va family indeksi boshqacha
+> bo'ladi. GPU "mos emas" chiqsa, `vulkaninfo` da uning `apiVersion` ini hamda `dynamicRendering`
+> va `synchronization2` qiymatlarini tekshiring: natija MoltenVK versiyasiga bog'liq. Natijani
+> Claude'ga ko'rsating.
+
 ### Ataylab xato qiling
 
 1. `cleanup()` dagi `vkDestroyDevice` blokini vaqtincha izohga oling. Yopganda 04-darsdan tanish
@@ -523,6 +555,8 @@ kerak.
 | `no matching function for call to 'FluidSimulation2D::FluidSimulation2D()'` | `FluidSimulation2D() = default;` yozilmagan (Nazariya, 9-bo'lim) |
 | `'vkCheck' was not declared in this scope` | `VK_CHECK` makrosi hali `::utils::vkCheck` ga o'zgartirilmagan (1-qadam) |
 | `vkCreateDevice xato qaytardi: -8` | `VK_ERROR_FEATURE_NOT_PRESENT`: GPU qo'llamaydigan imkoniyat yoqilmoqda |
+| macOS: `vkCreateInstance xato qaytardi: -9` | `VK_ERROR_INCOMPATIBLE_DRIVER`: loader MoltenVK'ni ko'rmayapti. Portability flag'i yoki `VK_KHR_portability_enumeration` kengaytmasi berilmagan (04-dars, `#ifdef __APPLE__`) |
+| macOS: `VUID-VkDeviceCreateInfo-pProperties-04451` | `VK_KHR_portability_subset` yoqilmagan (7-qadamdagi eslatma) |
 
 ---
 

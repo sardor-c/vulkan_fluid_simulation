@@ -79,6 +79,84 @@ faqat o'sha holat uchun bajaring. Qoida o'zgarmaydi.
 
 ## Muhit
 
+Foydalanuvchi **ikki kompyuterda navbatma-navbat** ishlaydi: Windows PC va MacBook. Ikkalasi ham
+faol. Qaysi birida ekaningizni sessiya muhitidagi platformadan bilasiz (`win32` / `darwin`).
+
+### Ikki kompyuterda ishlash qoidalari
+
+- **Sinxronlash GitHub orqali** (`https://github.com/sardor-c/vulkan_fluid_simulation.git`).
+  Sessiya boshida `git status -sb` va `git log --oneline -3` ni ko'ring, foydalanuvchidan esa
+  boshqa kompyuterda ishlagan-ishlamaganini va `git pull` qilganini so'rang. `pull`, `commit` va
+  `push` ni foydalanuvchi o'zi bajaradi (Claude faqat o'qiydigan buyruqlarni ishlatadi).
+- Har bir dars sikli oxirida (yangi dars yozilgach) eslatib qo'ying: kompyuter almashtirishdan oldin
+  `commit` + `push` qilinsin. Aks holda darslar va kod ikki kompyuterda har xil bo'lib qoladi.
+- Kod **ikkala platformada ham** build bo'lishi kerak. Platformaga xos qismlar `#ifdef __APPLE__`
+  (yoki `_WIN32`) ichida yoziladi. Kodni tekshirganda ikkala platformani ham hisobga oling
+  (masalan, portability kengaytmalari).
+- Darslarda buyruqlar farq qilsa, **ikkalasini ham** yozing: PowerShell va zsh
+  (`.\build\app.exe` / `./build/app`, `$env:X = "..."` / `export X=...`). Natija GPU'ga bog'liq
+  bo'lsa (GPU nomi, queue family'lar), *"sizda boshqacha bo'lishi mumkin"* deb ayting yoki ikkala
+  kompyuter uchun ham ko'rsating.
+- `build/` va `build-release/` har bir kompyuterda o'zi (`.gitignore` da). Ularni kompyuterlar
+  orasida hech qachon ko'chirmang.
+- `.vscode/c_cpp_properties.json` git'da turibdi va ikkala kompyuterga boradi. Unda ikkita
+  konfiguratsiya bo'lishi kerak: `"Win32"` va `"Mac"`. cpptools bu nomlarni taniydi va platformaga
+  qarab kerakligini o'zi tanlaydi.
+- Qator oxirlari: repo'da hamma fayl LF. Windows'da `core.autocrlf=true` (global va system), Mac'da
+  sozlanmagan bo'lsa ham LF. Ishonch uchun `.gitattributes` (`* text=auto`) tavsiya qilingan.
+- `../fluid_sim` namunasi ikkala kompyuterda alohida nusxa (Mac'ga zip bilan ko'chirilgan,
+  sinxronlanmaydi). U o'zgarmaydi, shuning uchun bu muammo emas.
+- "Joriy holat" yozuvlarida mashq qaysi kompyuterda bajarilganini ham belgilang.
+
+### macOS (MacBook) — **hali tekshirilmagan!**
+
+Mac haqida hech narsa tekshirilmagan: model, protsessor (Apple Silicon yoki Intel), GPU,
+o'rnatilgan asboblar noma'lum.
+
+**Mac'dagi birinchi sessiyada** (faqat o'qiydigan buyruqlar bilan) tekshirib, shu bo'limni
+haqiqiy faktlar bilan qayta yozing:
+- `uname -m`, `sw_vers`, `system_profiler SPDisplaysDataType` (GPU)
+- `clang++ --version` (Xcode Command Line Tools), `cmake --version`, `ninja --version`,
+  `glslc --version`, `brew list` (glfw, vulkan-*, molten-vk, shaderc)
+- Vulkan qayerdan o'rnatilgan: LunarG Vulkan SDK (`~/VulkanSDK/...`, `setup-env.sh`, `VULKAN_SDK`)
+  yoki Homebrew (`molten-vk`, `vulkan-loader`, `vulkan-headers`, `vulkan-validationlayers`, `vulkan-tools`)
+- `vulkaninfo --summary`: instance versiyasi, GPU `apiVersion` (1.3 bormi?), `deviceType`,
+  `VK_LAYER_KHRONOS_validation` topilyaptimi. To'liq `vulkaninfo` dan: queue family'lar,
+  `dynamicRendering`, `synchronization2`, `shaderDemoteToHelperInvocation`, `VK_KHR_portability_subset`
+- Biror narsa yetishmasa, o'rnatish buyruqlarini foydalanuvchiga bering: o'rnatishni o'zi qiladi.
+
+macOS'da Vulkan bo'yicha ma'lum tuzoqlar (darslarda hisobga oling):
+- Vulkan Mac'da Metal ustida ishlaydi (MoltenVK — "portability" implementatsiyasi). Instance uchun
+  `VK_KHR_portability_enumeration` kengaytmasi va `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR`
+  flag'i kerak. Usiz loader drayverni ko'rmaydi va `vkCreateInstance` `VK_ERROR_INCOMPATIBLE_DRIVER`
+  (-9) qaytaradi. Foydalanuvchi kodida bu `#ifdef __APPLE__` bilan **bor** (`createInstance`,
+  `getRequiredExtensions`).
+- Device: GPU `VK_KHR_portability_subset` ni e'lon qilsa, uni device kengaytmasi sifatida
+  **yoqish majburiy** (`VUID-VkDeviceCreateInfo-pProperties-04451`). Nomining makrosi
+  `vulkan_beta.h` da (`VK_ENABLE_BETA_EXTENSIONS` siz e'lon qilinmaydi), shuning uchun matn bilan
+  yoziladi: `"VK_KHR_portability_subset"`. 05-darsga eslatma qo'shilgan.
+- `isDeviceSuitable` dagi `apiVersion >= VK_API_VERSION_1_3` sharti va `VkPhysicalDeviceVulkan13Features`:
+  natija MoltenVK versiyasiga bog'liq, `vulkaninfo` bilan tekshiring.
+- Apple Silicon GPU — `INTEGRATED_GPU` turi va **unified memory** (CPU va GPU bitta xotiradan
+  foydalanadi). 03-darsdagi "RAM va VRAM alohida" faqat diskret GPU uchun to'g'ri: 09-darsda
+  (buffer'lar) buni alohida ayting.
+- Retina: oyna o'lchami (point) framebuffer o'lchamiga (piksel, odatda 2×) teng emas. 06-darsda
+  swapchain extent uchun `glfwGetFramebufferSize` ishlatilsin.
+- `discard` → `shaderDemoteToHelperInvocation`: MoltenVK uni qo'llashini 08-darsdan oldin tekshiring.
+- Buyruqlar: zsh, `./build/app` (`.exe` yo'q), muhit o'zgaruvchilari `export` bilan. 01–04-darslardagi
+  PowerShell/MSYS2 buyruqlari Mac'ga to'g'ri kelmaydi.
+- `.vscode/c_cpp_properties.json` da hozircha faqat `"Win32"` konfiguratsiyasi bor
+  (`"intelliSenseMode": "windows-gcc-x64"`). Foydalanuvchiga `"Mac"` konfiguratsiyasini qo'shishni
+  tushuntiring (`macos-clang-arm64` yoki `macos-clang-x64`, `uname -m` ga qarab).
+- `../fluid_sim` namunasi faqat Windows'da sinalgan. Unda portability yo'q (`vk_core.cpp`),
+  `executableDir()` esa Linux'dagi `/proc/self/exe` ga tayanadi. Mac'da o'zgartirishsiz ishlamasligi
+  mumkin. Namuna sifatida o'qish uchun baribir yaroqli.
+- Ko'chirish: `fluid_sim_tutorial` GitHub orqali (`https://github.com/sardor-c/vulkan_fluid_simulation.git`),
+  `fluid_sim` esa zip orqali (u git repo emas). `../fluid_sim` havolasi ishlashi uchun ikkalasi bitta
+  papkada turishi kerak. `build/` va `build-release/` Windows'niki: Mac'da qayta configure qilinadi.
+
+### Windows PC — tekshirilgan
+
 - Windows 11, PowerShell. VS Code + Claude extension.
 - MSYS2 MinGW64: `C:\msys64\mingw64\bin` PATH'da bor. U yerda: g++ 16.2, cmake 4.4, ninja, glslc,
   glslangValidator, spirv-val, GLFW 3 (dynamic, `glfw3.dll`), Vulkan headers (1.4.357) va loader.
@@ -174,7 +252,18 @@ faqat o'sha holat uchun bajaring. Qoida o'zgarmaydi.
   GRAPHICS|COMPUTE|TRANSFER|SPARSE), 1 (2, TRANSFER), 2 (8, COMPUTE|TRANSFER), 3 (VIDEO_DECODE),
   4 (VIDEO_ENCODE), 5 (OPTICAL_FLOW_NV). `dynamicRendering`, `synchronization2`,
   `shaderDemoteToHelperInvocation` — hammasi `true`.
-- **Keyingi qadam:** foydalanuvchi *"05-dars tayyor"* deb qaytadi. Unda:
+- **2026-10-19 (kech):** `.vscode/settings.json` (errorSquiggles disabled) o'chirildi. Hammasi
+  `aea9f61` ("04 complete") ga commit qilingan va push qilingan. Foydalanuvchi bundan buyon
+  **Windows va Mac'da navbatma-navbat** ishlaydi ("Ikki kompyuterda ishlash qoidalari"). 05-darsni
+  qaysi birida bajarishi noma'lum. 05-darsga macOS eslatmalari qo'shildi (portability subset,
+  boshqacha GPU va queue family'lar).
+- **Keyingi qadam:** foydalanuvchi qaytadi (Windows yoki Mac'dan). Unda:
+  0. Git sinxronligini tekshiring ("Ikki kompyuterda ishlash qoidalari"). Sessiya **Mac'da**
+     bo'lsa va "Muhit → macOS" hali tekshirilmagan bo'lsa: avval Mac muhitini tekshiring, `Muhit`
+     bo'limini yangilang va loyiha Mac'da build bo'lishiga yordam bering (yetishmayotgan paketlar,
+     `c_cpp_properties.json` dagi `"Mac"` konfiguratsiyasi, validation layer yo'li). 04-darsgacha
+     bo'lgan kod Mac'da birinchi marta build qilinadi: portability qismi (`#ifdef __APPLE__`)
+     ishlashini tekshiring. Shu bilan birga 05-dars ham bajarilgan bo'lishi mumkin.
   1. Tekshirish: 1-qadam tuzatishlari, VS Code'da xatolar ko'rinyaptimi, destructor + xavfsiz
      `cleanup`, `= delete`/`= default`, `pickPhysicalDevice` (o'zi yozgan qism: ikki chaqiruv,
      diskretni afzal ko'rish, `count == 0`), `findQueueFamily` (`== required`), `isDeviceSuitable`,
