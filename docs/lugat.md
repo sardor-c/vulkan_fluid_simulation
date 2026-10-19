@@ -51,6 +51,12 @@ Qavs ichida — atama birinchi marta tushuntirilgan dars.
 | **`\|`** (bitli OR) | Bir nechta bit-bayroqni birga yoqish: `WARNING_BIT \| ERROR_BIT` (04) |
 | **`#ifdef` / `NDEBUG`** | Makros e'lon qilingan bo'lsagina kodni qoldirish. `NDEBUG` Release build'da e'lon qilinadi (04) |
 | **Stringify** (`#x`) | Makros ichida argumentni matnga aylantirish: `VK_CHECK(x)` → `"x"` (04) |
+| **Klass** (`class`) | Ma'lumot (a'zo o'zgaruvchilar) va funksiyalarni bitta tipga birlashtirish. `private` a'zolar faqat klass ichidan ko'rinadi (05) |
+| **Destructor** (`~Klass()`) | Obyekt umri tugaganda C++ o'zi chaqiradigan funksiya. Exception paytida ham chaqiriladi (05) |
+| **RAII** | Resurs obyekt bilan birga olinadi va destructor'da qaytariladi: tozalashni unutib bo'lmaydi (05) |
+| **`= delete`** | Funksiyani taqiqlash. Masalan, nusxa konstruktorini o'chirib, klassni nusxalab bo'lmaydigan qilish (05) |
+| **`= default`** | Kompilyator yaratadigan standart variantni aniq so'rash, masalan `Klass() = default;` (05) |
+| **`std::optional`** | Qiymat bo'lishi yoki bo'lmasligi mumkin bo'lgan quti: `has_value()`, `value()`, `std::nullopt` (05) |
 
 ## Simulatsiya va grafika
 
@@ -119,3 +125,13 @@ Qavs ichida — atama birinchi marta tushuntirilgan dars.
 | **Ikki chaqiruvli ro'yxat** | Avval `count` ni olish, keyin shuncha joy ajratib, ro'yxatning o'zini olish (`vkEnumerate...`) (04) |
 | **`vkGetInstanceProcAddr`** | Funksiya manzilini nomi bo'yicha loader'dan so'rab olish. Kengaytma funksiyalari uchun kerak (04) |
 | **`PFN_...`** | Vulkan funksiya pointer'i tipi: *Pointer to FuNction*, masalan `PFN_vkCreateDebugUtilsMessengerEXT` (04) |
+| **Diskret / integrated GPU** | Alohida videokarta (o'z VRAM'i bilan) / protsessor ichidagi GPU. Biz diskretini afzal ko'ramiz (05) |
+| **Properties** (xossalar) | GPU haqidagi o'zgarmas ma'lumot: nomi, turi, `apiVersion`, `limits` (05) |
+| **Limits** | GPU chegaralari, masalan `maxComputeWorkGroupInvocations` (05) |
+| **Features** (imkoniyatlar) | GPU qila oladigan qo'shimcha narsalar. Qo'llab-quvvatlash ≠ yoqilgan: device yaratilganda yoqiladi (05) |
+| **`dynamicRendering`** | Vulkan 1.3 imkoniyati: render pass'siz chizish. Device yaratilganda yoqiladi (05) |
+| **`synchronization2`** | Vulkan 1.3 imkoniyati: sinxronizatsiyaning soddaroq API'si (07-darsda) (05) |
+| **Queue family** | Bir xil imkoniyatli navbatlar guruhi (GRAPHICS, COMPUTE, TRANSFER...). RTX 3060 da family 0 hammasini qiladi (05) |
+| **Queue priority** | Navbatga beriladigan 0.0–1.0 ustuvorlik. Bitta navbatda ahamiyatsiz, lekin majburiy (05) |
+| **`vkGetDeviceQueue`** | Device bilan birga yaratilgan navbatning handle'ini olish. Navbat alohida yo'q qilinmaydi (05) |
+| **Async compute** | Hisob-kitobni alohida compute navbatida grafika bilan parallel bajarish. Murakkab optimizatsiya, bizda yo'q (05) |

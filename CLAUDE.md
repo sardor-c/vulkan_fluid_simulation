@@ -131,19 +131,58 @@ faqat o'sha holat uchun bajaring. Qoida o'zgarmaydi.
   Xatolar exception bilan; `throw` bo'lganda tozalash o'tkazib yuboriladi (darsda ochiq aytilgan,
   "keyingi darslarda hal qilamiz" deb va'da berilgan → destructor/RAII). Callback xabari
   `[Vulkan XATO/OGOHLANTIRISH]` formatida, `std::cerr` ga. Lug'atga C++ va Vulkan atamalari qo'shildi.
-- **Keyingi qadam:** foydalanuvchi *"04-dars tayyor"* deb qaytadi. Unda:
-  1. Tekshirish: 03 tuzatishlari (`Vulkan::Vulkan`, maskalar → makroslar, `<cstdlib>` olib
-     tashlangan), `run()` + `try/catch`, `vkCheck`, ikki chaqiruvli `isLayerAvailable` (`strcmp`),
-     `getRequiredExtensions` (`push_back` sikli), `debugCallback` (`VKAPI_ATTR`/`VKAPI_CALL`,
-     `VK_FALSE`), `pNext` ga `debugInfo`, `vkGetInstanceProcAddr`, tozalash tartibi
-     (window → messenger → instance → glfwTerminate). "Ataylab xato" (messenger'ni yo'q qilmaslik →
-     `VUID-vkDestroyInstance-instance-00629`) ko'rilganini so'rash. Mashqlar: layer ro'yxati va
-     `VK_ADD_LAYER_PATH=""`, to'g'ridan-to'g'ri chaqiruv → linker xatosi, `#ifdef NDEBUG` +
-     `build-release/` (`.gitignore` ga qo'shilganmi), `VK_CHECK` (`#x`), INFO/VERBOSE.
-  2. Keyin `docs/05_physical_va_logical_device.md` (yoki shunga yaqin nom): `vkEnumeratePhysicalDevices`
-     (ikki chaqiruv), `VkPhysicalDeviceProperties` (nomi, `apiVersion` ≥ 1.3, deviceType), queue
-     family'lar (graphics + compute; present 06-darsda), `VkDeviceCreateInfo`,
-     `VkPhysicalDeviceVulkan13Features` (`dynamicRendering`, `synchronization2`, keyinroq
-     `shaderDemoteToHelperInvocation`) `pNext` orqali, `vkGetDeviceQueue`. `main.cpp` juda
-     kattalashadi: Vulkan kodini alohida faylga (`vulkan_context.hpp/.cpp` yoki shunga o'xshash)
-     va struct'ga ko'chirishni shu darsda boshlash, destructor bilan tozalash muammosini hal qilish.
+- **2026-10-19:** 04 tekshirildi. Foydalanuvchi darsdagi erkin funksiyalar o'rniga o'zi
+  **klass** tuzilmasini tanladi (vulkan-tutorial.com dagi `HelloTriangleApplication` uslubi).
+  **Bundan keyingi darslar shu tuzilmaga tayanadi:**
+  - `src/main.cpp`: `FluidSimulation2D fluidSimulation2D;` `try` dan **oldin** e'lon qilingan,
+    `try { fluidSimulation2D.run(); } catch (const std::exception& e)` → `utils::createErrorLog`.
+  - `src/fluid_sim_2d.h/.cpp`: `class FluidSimulation2D`. `run()` → `initWindow()`, `initVulkan()`,
+    `mainLoop()`, `cleanup()`. A'zolar: `window`, `instance`, `debugMessenger`. Metodlar:
+    `createInstance`, `checkValidationLayerSupport`, `getRequiredExtensions`, `checkRequiredExtensions`
+    (o'zi qo'shgan), `makeDebugMessengerInfo(VkDebugUtilsMessengerCreateInfoEXT&)`,
+    `setupDebugMessenger`, `static debugCallback`. Anonim namespace'da: `WIDTH`, `HEIGHT`,
+    `validationLayers` (vector), `enableValidationLayers` (`#ifdef NDEBUG`).
+  - `src/utils.h/.cpp`: `namespace utils` — `CreateDebugUtilsMessengerEXT` /
+    `DestroyDebugUtilsMessengerEXT` (proxy), `vkCheck`, `VK_CHECK` makrosi, `printVulkanVersion`,
+    `isLayerAvailable`, `printAvailableLayers`, `createInfoLog` / `createErrorLog` /
+    `createWarningLog` (rangli). `src/color.h`: ANSI ranglar (`color::QIZIL`, `YASHIL`...).
+    Header'lar `.h` kengaytmali (faqat `vec2.hpp` boshqacha). Xabarlar `utils::createInfoLog` bilan.
+  - Mashqlar: `printAvailableLayers`, `#ifdef NDEBUG` + `build-release/` (`.gitignore` da bor),
+    `VK_CHECK`, INFO/VERBOSE sinab ko'rilgan. "Ataylab xato", `VK_ADD_LAYER_PATH=""`, linker xatosi
+    mashqlari natijasi yozilmagan.
+  - Kamchiliklar (05-darsning 1-qadamiga berildi): `glfwCreateWindow` `nullptr` tekshiruvi yo'q;
+    `printVulkanVersion()` `bool`, `initWindow` da `if (!...) return;` (yolg'on yo'l, `window`
+    nullptr qolishi mumkin); `VK_CHECK` `namespace utils` ichida va `vkCheck` ni to'liq nomsiz
+    chaqiradi (makros namespace'ni bilmaydi → `utils` dan tashqarida kompilyatsiya xatosi);
+    `vkCreateInstance` va messenger natijalari `VK_CHECK` siz (xato kodi yo'qoladi);
+    `isLayerAvailable` va `checkValidationLayerSupport` takror; `glfwVulkanSupported` olib
+    tashlangan; `cleanup` tartibi qat'iy teskari emas (window birinchi yo'q qilinadi).
+  - **VS Code muammosi:** `.vscode/settings.json` da `"C_Cpp.errorSquiggles": "disabled"` (user
+    sozlamasidagi `"enabled"` ni bekor qiladi). `c_cpp_properties.json` →
+    `build/compile_commands.json`, unda 4 ta `.cpp` bor. CMake Tools 1.24 va cpptools 1.34 o'rnatilgan.
+    cpptools g++ ning `-Wall -Wextra` ogohlantirishlarini ko'rsatmasligi tushuntirildi (CMake Tools
+    build yoki `$gcc` problem matcher).
+  `docs/05_physical_va_logical_device.md` yozildi: yangi a'zolar `physicalDevice`, `device`,
+  `queueFamilyIndex`, `queue`; metodlar `pickPhysicalDevice` (skelet, o'zi yozadi),
+  `isDeviceSuitable(gpu)`, `findQueueFamily(gpu)` → `std::optional<uint32_t>`,
+  `createLogicalDevice` (features13 `pNext` orqali: `dynamicRendering`, `synchronization2`;
+  `shaderDemoteToHelperInvocation` faqat so'raladi, 08-darsda yoqiladi). Destructor `cleanup()` ni
+  chaqiradi, `run()` dan `cleanup()` olib tashlanadi, `cleanup` har bir handle'ni tekshiradi va
+  null qiladi, tartib: device → messenger → instance → window → glfwTerminate. Nusxalash
+  `= delete`, `FluidSimulation2D() = default`.
+- **Muhit faktlari (2026-10-19):** kompyuterda bitta GPU. RTX 3060 queue family'lari: 0 (16 ta,
+  GRAPHICS|COMPUTE|TRANSFER|SPARSE), 1 (2, TRANSFER), 2 (8, COMPUTE|TRANSFER), 3 (VIDEO_DECODE),
+  4 (VIDEO_ENCODE), 5 (OPTICAL_FLOW_NV). `dynamicRendering`, `synchronization2`,
+  `shaderDemoteToHelperInvocation` — hammasi `true`.
+- **Keyingi qadam:** foydalanuvchi *"05-dars tayyor"* deb qaytadi. Unda:
+  1. Tekshirish: 1-qadam tuzatishlari, VS Code'da xatolar ko'rinyaptimi, destructor + xavfsiz
+     `cleanup`, `= delete`/`= default`, `pickPhysicalDevice` (o'zi yozgan qism: ikki chaqiruv,
+     diskretni afzal ko'rish, `count == 0`), `findQueueFamily` (`== required`), `isDeviceSuitable`,
+     `createLogicalDevice`, ikki "ataylab xato" (device'ni yo'q qilmaslik, `throw` sinovi).
+  2. Keyin `docs/06_surface_va_swapchain.md`: `glfwCreateWindowSurface`, present support
+     (`vkGetPhysicalDeviceSurfaceSupportKHR`, `findQueueFamily`/`isDeviceSuitable` ga qo'shish),
+     device extension `VK_KHR_swapchain` (mavjudligini tekshirish), surface capabilities / formats /
+     present modes (ikki chaqiruv), swapchain yaratish (format, FIFO = vsync, extent, image count),
+     swapchain image'lari va image view'lar, framebuffer size callback (02-darsda yozgan edi, endi
+     olib tashlagan) va swapchain'ni qayta yaratish (to'liq qayta yaratish 07-darsga qolishi mumkin).
+     `cleanup` ga: image view'lar → swapchain → (device) → ... → surface instance'dan oldin, window'dan oldin.

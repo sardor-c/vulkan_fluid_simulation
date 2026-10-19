@@ -11,6 +11,8 @@ find_package(Vulkan REQUIRED)
 add_executable(app 
     src/main.cpp
     src/vec2.cpp
+    src/fluid_sim_2d.cpp
+    src/utils.cpp
 )
 
 

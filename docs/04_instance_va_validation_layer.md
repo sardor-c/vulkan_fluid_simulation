@@ -705,4 +705,4 @@ Validation layer'siz bu xato **hech qanday belgisiz** o'tib ketardi.
 ---
 
 **Oldingi dars:** [03 — GPU va Vulkan qanday ishlaydi](03_gpu_va_vulkan.md) ·
-**Keyingi dars:** 05 — Physical device, logical device, queue *(04-dars tugagach yoziladi)*
+**Keyingi dars:** [05 — Physical device, logical device va queue](05_physical_va_logical_device.md)
