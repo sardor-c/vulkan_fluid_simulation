@@ -32,9 +32,7 @@ void FluidSimulation2D::run() {
 }
 
 void FluidSimulation2D::initWindow() {
-    if (!utils::printVulkanVersion()) {
-        return;
-    }
+    utils::printVulkanVersion();
 
     if (!glfwInit()) {
         throw std::runtime_error("GLFW ishga tushmadi!");

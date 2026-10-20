@@ -40,16 +40,13 @@ namespace utils {
     }
 
 
-    bool printVulkanVersion() {
+    void printVulkanVersion() {
         uint32_t version = 0;
-        VkResult result = vkEnumerateInstanceVersion(&version);
-        vkCheck(result, "printVulkanVersion");
+        VK_CHECK(vkEnumerateInstanceVersion(&version));
         std::cout << "Vulkan (loader) versiyasi: "
             << VK_API_VERSION_MAJOR(version) << '.'
             << VK_API_VERSION_MINOR(version) << '.'
             << VK_API_VERSION_PATCH(version) << '\n';
-
-        return true;
     }
 
     bool isLayerAvailable(const char* name) {

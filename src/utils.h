@@ -24,7 +24,7 @@ namespace utils {
     void vkCheck(VkResult result, const char* what);
 
 
-    bool printVulkanVersion();
+    void printVulkanVersion();
     bool isLayerAvailable(const char* name);
     void printAvailableLayers();
 
