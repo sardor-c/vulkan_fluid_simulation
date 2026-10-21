@@ -48,7 +48,6 @@ namespace utils {
             << VK_API_VERSION_PATCH(version) << '\n';
     }
 
-  
 
     void printAvailableLayers() {
         uint32_t count = 0;
