@@ -600,4 +600,4 @@ kerak.
 ---
 
 **Oldingi dars:** [04 — Instance va validation layer](04_instance_va_validation_layer.md) ·
-**Keyingi dars:** 06 — Surface va swapchain *(05-dars tugagach yoziladi)*
+**Keyingi dars:** [06 — Surface va swapchain](06_surface_va_swapchain.md)

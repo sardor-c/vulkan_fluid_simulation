@@ -1,6 +1,5 @@
 #include "utils.h"
 
-#include <vector>
 #include <cstring>
 #include <stdexcept>
 #include <iostream>
@@ -49,20 +48,7 @@ namespace utils {
             << VK_API_VERSION_PATCH(version) << '\n';
     }
 
-    bool isLayerAvailable(const char* name) {
-        uint32_t count = 0;
-        vkCheck(vkEnumerateInstanceLayerProperties(&count, nullptr), "vkEnumerateInstanceLayerProperties");
-
-        std::vector<VkLayerProperties> layers(count);
-        vkCheck(vkEnumerateInstanceLayerProperties(&count, layers.data()), "vkEnumerateInstanceLayerProperties");
-
-        for (const auto& layer : layers) {
-            if (std::strcmp(layer.layerName, name) == 0) {
-                return true;
-            }
-        }
-        return false;
-    }
+  
 
     void printAvailableLayers() {
         uint32_t count = 0;
@@ -75,8 +61,26 @@ namespace utils {
         for (const auto& layer : layers) {
             std::cout << "| " << layer.layerName << std::endl;
         }
-        std::cout << color::YASHIL << "-----------------------" << color::RESET;
+        std::cout << color::YASHIL << "-----------------------" << color::RESET << std::endl;
 
+    }
+
+    void printQueueFamilies(VkPhysicalDevice gpu) {
+        uint32_t count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, nullptr);
+
+        std::vector<VkQueueFamilyProperties> families(count);
+        vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, families.data());
+        for (uint32_t i = 0; i < families.size(); i++) {
+            const auto& f = families[i];
+            std::cout << color::RESET << color::OQ << "|   " << color::RESET << color::YASHIL;
+            std::cout << "oila " << i << ": " << f.queueCount << " ta navbat |"
+                << ((f.queueFlags & VK_QUEUE_GRAPHICS_BIT) ? " GRAPHICS" : "")
+                << ((f.queueFlags & VK_QUEUE_COMPUTE_BIT) ? " COMPUTE" : "")
+                << ((f.queueFlags & VK_QUEUE_TRANSFER_BIT) ? " TRANSFER" : "")
+                << std::endl;
+        }
+        std::cout << color::OQ << color::QALIN << "----------------------------------------------------" << color::RESET << std::endl;
     }
 
     std::string createInfoLog(const std::string& matn) {

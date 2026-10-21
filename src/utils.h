@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vector>
 #include <string>
 
 
@@ -25,8 +26,8 @@ namespace utils {
 
 
     void printVulkanVersion();
-    bool isLayerAvailable(const char* name);
     void printAvailableLayers();
+    void printQueueFamilies(VkPhysicalDevice gpu);
 
 
     std::string createInfoLog(const std::string& matn);

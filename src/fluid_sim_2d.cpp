@@ -23,17 +23,17 @@ namespace {
 
 }
 
+FluidSimulation2D::~FluidSimulation2D(){
+    cleanup();
+}
 
 void FluidSimulation2D::run() {
     initWindow();
     initVulkan();
     mainLoop();
-    cleanup();
 }
 
 void FluidSimulation2D::initWindow() {
-    utils::printVulkanVersion();
-
     if (!glfwInit()) {
         throw std::runtime_error("GLFW ishga tushmadi!");
     }
@@ -52,8 +52,11 @@ void FluidSimulation2D::initWindow() {
 }
 
 void FluidSimulation2D::initVulkan() {
+    utils::printVulkanVersion();
     createInstance();
-    setupDebugMessenger();;
+    setupDebugMessenger();
+    pickPhysicalDevice();
+    createLogicalDevice();
 }
 
 void FluidSimulation2D::mainLoop() {
@@ -81,11 +84,27 @@ void FluidSimulation2D::mainLoop() {
 }
 
 void FluidSimulation2D::cleanup() {
-    glfwDestroyWindow(window);
-    if (enableValidationLayers) {
-        utils::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+
+    if (device != VK_NULL_HANDLE){
+        vkDestroyDevice(device, nullptr);
+        device = VK_NULL_HANDLE;
     }
-    vkDestroyInstance(instance, nullptr);
+    
+    if (debugMessenger != VK_NULL_HANDLE) {
+        utils::DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        debugMessenger = VK_NULL_HANDLE;
+    }
+    
+    if (instance != VK_NULL_HANDLE){
+        vkDestroyInstance(instance, nullptr);
+        instance = VK_NULL_HANDLE;
+    }
+
+    if (window != nullptr){
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
+
     glfwTerminate();
 }
 
@@ -257,3 +276,139 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FluidSimulation2D::debugCallback(
     return VK_FALSE;
 }
 
+void FluidSimulation2D::pickPhysicalDevice() {
+    uint32_t count = 0;
+    VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, nullptr));
+    if (count == 0){
+        throw std::runtime_error("Vulkanni qo'llab quvvatlovchi GPU topilmadi!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(count);
+    VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, devices.data()));
+    int highScore = 0;
+    for (const auto& item: devices){
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(item, &properties);
+        bool isDiscretGpu = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        int score = rateGpu(item);
+        std::cout << "GPU: " << properties.deviceName << (isDiscretGpu ? " | diskret " : "")  << " | score: " << score << std::endl;
+        if (score > highScore){
+            highScore = score;
+            physicalDevice = item;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE){
+        throw std::runtime_error("Mos GPU topilmadi!");
+    }
+
+    queueFamilyIndex = findQueueFamily(physicalDevice).value();
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    std::cout << utils::createInfoLog(
+        "Tanlangan GPU: " + std::string(properties.deviceName) + ". queueFamilyIndex: " 
+        + std::to_string(queueFamilyIndex));
+    utils::printQueueFamilies(physicalDevice);
+}
+
+
+int FluidSimulation2D::rateGpu(VkPhysicalDevice gpu) {
+    if (!isDeviceSuitable(gpu)){
+        return 0;
+    }
+
+    int score = 1;
+    
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(gpu, &properties);
+    
+    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 100000;
+    }
+    score += properties.limits.maxImageDimension2D;
+    return score;
+}
+
+bool FluidSimulation2D::isDeviceSuitable(VkPhysicalDevice gpu) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(gpu, &properties);
+    if (properties.apiVersion < VK_API_VERSION_1_3){
+        return false;
+    }
+
+    VkPhysicalDeviceVulkan13Features features13{};
+    features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+
+    VkPhysicalDeviceFeatures2 features2{};
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &features13;
+
+    vkGetPhysicalDeviceFeatures2(gpu, &features2);
+    if (!features13.dynamicRendering || !features13.synchronization2){
+        return false;
+    }
+
+    return findQueueFamily(gpu).has_value();
+}
+
+std::optional<uint32_t> FluidSimulation2D::findQueueFamily(VkPhysicalDevice gpu)
+{
+    uint32_t count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, nullptr);
+
+    std::vector<VkQueueFamilyProperties> families(count);
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, families.data());
+
+    const VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+    for(uint32_t i = 0; i < count; i++){
+        if ((families[i].queueFlags & required) == required){
+            return i;
+        }
+    }
+
+    return std::nullopt;
+}
+
+void FluidSimulation2D::createLogicalDevice() {
+    float queuePriority = 1.0f;
+    VkDeviceQueueCreateInfo queueInfo{};
+    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueInfo.queueFamilyIndex = queueFamilyIndex;
+    queueInfo.queueCount = 1;
+    queueInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceVulkan13Features features13{};
+    features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    features13.dynamicRendering = VK_TRUE;
+    features13.synchronization2 = VK_TRUE;
+
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pNext = &features13;
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pEnabledFeatures = nullptr;
+
+    uint32_t deviceExtensionCount = 0;
+    VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionCount, nullptr));
+    std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
+    VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionCount, deviceExtensions.data()));
+
+    std::vector<const char*> enabledExtensions;
+
+    for (const auto& deviceExtension: deviceExtensions){
+        if (std::strcmp(deviceExtension.extensionName, "VK_KHR_portability_subset") == 0){
+            enabledExtensions.push_back("VK_KHR_portability_subset");
+        }
+    }
+
+    createInfo.pQueueCreateInfos = &queueInfo;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
+    createInfo.ppEnabledExtensionNames = enabledExtensions.data();
+
+    VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+
+    vkGetDeviceQueue(device, queueFamilyIndex, 0, &queue);
+    std::cout << utils::createInfoLog("Logical device va queue yaratildi");
+}

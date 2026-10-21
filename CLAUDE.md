@@ -108,52 +108,47 @@ faol. Qaysi birida ekaningizni sessiya muhitidagi platformadan bilasiz (`win32` 
   sinxronlanmaydi). U o'zgarmaydi, shuning uchun bu muammo emas.
 - "Joriy holat" yozuvlarida mashq qaysi kompyuterda bajarilganini ham belgilang.
 
-### macOS (MacBook) — **hali tekshirilmagan!**
+### macOS (MacBook) — tekshirilgan (2026-10-21)
 
-Mac haqida hech narsa tekshirilmagan: model, protsessor (Apple Silicon yoki Intel), GPU,
-o'rnatilgan asboblar noma'lum.
+- MacBook Pro, **Apple M1 Pro** (arm64, 16 yadroli GPU), macOS 27.0.1. Ekran: Liquid Retina XDR
+  (3456 × 2234, Retina, ProMotion 120 Hz gacha). zsh, VS Code + Claude extension.
+- Asboblar: Apple clang 21.0 (Xcode), cmake 4.4.3, ninja 1.13.2, glslc (shaderc 2026.4),
+  spirv-tools, glslang.
+- Vulkan **Homebrew** orqali (LunarG SDK yo'q, `VULKAN_SDK` o'rnatilmagan): `glfw`, `molten-vk`,
+  `vulkan-loader`, `vulkan-headers`, `vulkan-validationlayers`, `vulkan-tools`,
+  `vulkan-utility-libraries`, `shaderc`, `glslang`, `spirv-tools`, `spirv-headers`. CMake ularni
+  `/opt/homebrew` dan topadi (`/opt/homebrew/lib/libvulkan.dylib`, `glfw3_DIR=/opt/homebrew/lib/cmake/glfw3`).
+- `vulkaninfo`: instance 1.4.357. `VK_LAYER_KHRONOS_validation` 1.4.357 **qo'shimcha sozlamasiz**
+  topiladi (`VK_ADD_LAYER_PATH` kerak emas). GPU0: `Apple M1 Pro`, `INTEGRATED_GPU`, MoltenVK 1.4.2,
+  `apiVersion` 1.4.357. `dynamicRendering`, `synchronization2`, `shaderDemoteToHelperInvocation`
+  — hammasi `true`. `VK_KHR_portability_subset` va `VK_KHR_swapchain` bor.
+- Queue family'lar: **4 ta**, har birida 1 ta navbat, hammasi GRAPHICS | COMPUTE | TRANSFER.
+- Surface (`VK_EXT_metal_surface`): 60 ta format (boshi `B8G8R8A8_UNORM` + `SRGB_NONLINEAR`),
+  present mode'lar faqat **FIFO va IMMEDIATE** (MAILBOX yo'q), `minImageCount` 2,
+  `maxImageCount` 3, compositeAlpha: OPAQUE, POST_MULTIPLIED, INHERIT.
+- `.vscode/c_cpp_properties.json` da `"Mac"` konfiguratsiyasi bor (`macos-clang-arm64`,
+  `build/compile_commands.json`).
+- Loyiha Mac'da Debug'da build bo'ladi (`build/app`, 2026-10-21). 04-dars portability qismi
+  (`#ifdef __APPLE__`) va 05-darsdagi `VK_KHR_portability_subset` ishlaydi.
 
-**Mac'dagi birinchi sessiyada** (faqat o'qiydigan buyruqlar bilan) tekshirib, shu bo'limni
-haqiqiy faktlar bilan qayta yozing:
-- `uname -m`, `sw_vers`, `system_profiler SPDisplaysDataType` (GPU)
-- `clang++ --version` (Xcode Command Line Tools), `cmake --version`, `ninja --version`,
-  `glslc --version`, `brew list` (glfw, vulkan-*, molten-vk, shaderc)
-- Vulkan qayerdan o'rnatilgan: LunarG Vulkan SDK (`~/VulkanSDK/...`, `setup-env.sh`, `VULKAN_SDK`)
-  yoki Homebrew (`molten-vk`, `vulkan-loader`, `vulkan-headers`, `vulkan-validationlayers`, `vulkan-tools`)
-- `vulkaninfo --summary`: instance versiyasi, GPU `apiVersion` (1.3 bormi?), `deviceType`,
-  `VK_LAYER_KHRONOS_validation` topilyaptimi. To'liq `vulkaninfo` dan: queue family'lar,
-  `dynamicRendering`, `synchronization2`, `shaderDemoteToHelperInvocation`, `VK_KHR_portability_subset`
-- Biror narsa yetishmasa, o'rnatish buyruqlarini foydalanuvchiga bering: o'rnatishni o'zi qiladi.
-
-macOS'da Vulkan bo'yicha ma'lum tuzoqlar (darslarda hisobga oling):
-- Vulkan Mac'da Metal ustida ishlaydi (MoltenVK — "portability" implementatsiyasi). Instance uchun
-  `VK_KHR_portability_enumeration` kengaytmasi va `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR`
-  flag'i kerak. Usiz loader drayverni ko'rmaydi va `vkCreateInstance` `VK_ERROR_INCOMPATIBLE_DRIVER`
-  (-9) qaytaradi. Foydalanuvchi kodida bu `#ifdef __APPLE__` bilan **bor** (`createInstance`,
-  `getRequiredExtensions`).
-- Device: GPU `VK_KHR_portability_subset` ni e'lon qilsa, uni device kengaytmasi sifatida
-  **yoqish majburiy** (`VUID-VkDeviceCreateInfo-pProperties-04451`). Nomining makrosi
-  `vulkan_beta.h` da (`VK_ENABLE_BETA_EXTENSIONS` siz e'lon qilinmaydi), shuning uchun matn bilan
-  yoziladi: `"VK_KHR_portability_subset"`. 05-darsga eslatma qo'shilgan.
-- `isDeviceSuitable` dagi `apiVersion >= VK_API_VERSION_1_3` sharti va `VkPhysicalDeviceVulkan13Features`:
-  natija MoltenVK versiyasiga bog'liq, `vulkaninfo` bilan tekshiring.
-- Apple Silicon GPU — `INTEGRATED_GPU` turi va **unified memory** (CPU va GPU bitta xotiradan
-  foydalanadi). 03-darsdagi "RAM va VRAM alohida" faqat diskret GPU uchun to'g'ri: 09-darsda
-  (buffer'lar) buni alohida ayting.
-- Retina: oyna o'lchami (point) framebuffer o'lchamiga (piksel, odatda 2×) teng emas. 06-darsda
-  swapchain extent uchun `glfwGetFramebufferSize` ishlatilsin.
-- `discard` → `shaderDemoteToHelperInvocation`: MoltenVK uni qo'llashini 08-darsdan oldin tekshiring.
-- Buyruqlar: zsh, `./build/app` (`.exe` yo'q), muhit o'zgaruvchilari `export` bilan. 01–04-darslardagi
+macOS'da Vulkan bo'yicha tuzoqlar (darslarda hisobga oling):
+- Instance uchun `VK_KHR_portability_enumeration` + `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR`
+  (usiz `vkCreateInstance` → -9). Foydalanuvchi kodida **bor**.
+- Device: `VK_KHR_portability_subset` yoqilishi majburiy (`VUID-VkDeviceCreateInfo-pProperties-04451`).
+  Makrosi `vulkan_beta.h` da, shuning uchun matn bilan yoziladi. Foydalanuvchi kodida **bor**
+  (`createLogicalDevice`, device kengaytmalari ro'yxatidan qidiradi).
+- Apple Silicon — `INTEGRATED_GPU` va **unified memory**. 03-darsdagi "RAM va VRAM alohida" faqat
+  diskret GPU uchun to'g'ri: 09-darsda (buffer'lar) buni alohida ayting (`HOST_VISIBLE | DEVICE_LOCAL`).
+- Retina: oyna 1280 × 720 point = 2560 × 1440 piksel. 06-darsda extent uchun `currentExtent` /
+  `glfwGetFramebufferSize` ishlatildi. Viewport/scissor va sichqoncha koordinatalarida (16-dars)
+  ham shu farqni eslang: `glfwGetCursorPos` point'da qaytaradi.
+- Present mode'lar: MAILBOX yo'q. Vsync o'chirilsa, Mac'da IMMEDIATE tanlanadi.
+- `discard` → `shaderDemoteToHelperInvocation`: MoltenVK 1.4.2 da `true`.
+- Buyruqlar: zsh, `./build/app`, muhit o'zgaruvchilari `export` bilan. 01–04-darslardagi
   PowerShell/MSYS2 buyruqlari Mac'ga to'g'ri kelmaydi.
-- `.vscode/c_cpp_properties.json` da hozircha faqat `"Win32"` konfiguratsiyasi bor
-  (`"intelliSenseMode": "windows-gcc-x64"`). Foydalanuvchiga `"Mac"` konfiguratsiyasini qo'shishni
-  tushuntiring (`macos-clang-arm64` yoki `macos-clang-x64`, `uname -m` ga qarab).
-- `../fluid_sim` namunasi faqat Windows'da sinalgan. Unda portability yo'q (`vk_core.cpp`),
-  `executableDir()` esa Linux'dagi `/proc/self/exe` ga tayanadi. Mac'da o'zgartirishsiz ishlamasligi
-  mumkin. Namuna sifatida o'qish uchun baribir yaroqli.
-- Ko'chirish: `fluid_sim_tutorial` GitHub orqali (`https://github.com/sardor-c/vulkan_fluid_simulation.git`),
-  `fluid_sim` esa zip orqali (u git repo emas). `../fluid_sim` havolasi ishlashi uchun ikkalasi bitta
-  papkada turishi kerak. `build/` va `build-release/` Windows'niki: Mac'da qayta configure qilinadi.
+- `../fluid_sim` namunasi Mac'da ham bor (`/Users/mac/dev/VULKAN_SIMULATIONS/fluid_sim`), lekin faqat
+  Windows'da sinalgan: portability yo'q (`vk_core.cpp`), `executableDir()` `/proc/self/exe` ga tayanadi.
+  Namuna sifatida o'qish uchun yaroqli.
 
 ### Windows PC — tekshirilgan
 
@@ -257,21 +252,61 @@ macOS'da Vulkan bo'yicha ma'lum tuzoqlar (darslarda hisobga oling):
   **Windows va Mac'da navbatma-navbat** ishlaydi ("Ikki kompyuterda ishlash qoidalari"). 05-darsni
   qaysi birida bajarishi noma'lum. 05-darsga macOS eslatmalari qo'shildi (portability subset,
   boshqacha GPU va queue family'lar).
-- **Keyingi qadam:** foydalanuvchi qaytadi (Windows yoki Mac'dan). Unda:
-  0. Git sinxronligini tekshiring ("Ikki kompyuterda ishlash qoidalari"). Sessiya **Mac'da**
-     bo'lsa va "Muhit → macOS" hali tekshirilmagan bo'lsa: avval Mac muhitini tekshiring, `Muhit`
-     bo'limini yangilang va loyiha Mac'da build bo'lishiga yordam bering (yetishmayotgan paketlar,
-     `c_cpp_properties.json` dagi `"Mac"` konfiguratsiyasi, validation layer yo'li). 04-darsgacha
-     bo'lgan kod Mac'da birinchi marta build qilinadi: portability qismi (`#ifdef __APPLE__`)
-     ishlashini tekshiring. Shu bilan birga 05-dars ham bajarilgan bo'lishi mumkin.
-  1. Tekshirish: 1-qadam tuzatishlari, VS Code'da xatolar ko'rinyaptimi, destructor + xavfsiz
-     `cleanup`, `= delete`/`= default`, `pickPhysicalDevice` (o'zi yozgan qism: ikki chaqiruv,
-     diskretni afzal ko'rish, `count == 0`), `findQueueFamily` (`== required`), `isDeviceSuitable`,
-     `createLogicalDevice`, ikki "ataylab xato" (device'ni yo'q qilmaslik, `throw` sinovi).
-  2. Keyin `docs/06_surface_va_swapchain.md`: `glfwCreateWindowSurface`, present support
-     (`vkGetPhysicalDeviceSurfaceSupportKHR`, `findQueueFamily`/`isDeviceSuitable` ga qo'shish),
-     device extension `VK_KHR_swapchain` (mavjudligini tekshirish), surface capabilities / formats /
-     present modes (ikki chaqiruv), swapchain yaratish (format, FIFO = vsync, extent, image count),
-     swapchain image'lari va image view'lar, framebuffer size callback (02-darsda yozgan edi, endi
-     olib tashlagan) va swapchain'ni qayta yaratish (to'liq qayta yaratish 07-darsga qolishi mumkin).
-     `cleanup` ga: image view'lar → swapchain → (device) → ... → surface instance'dan oldin, window'dan oldin.
+- **2026-10-21 (Mac):** Mac'dagi birinchi sessiya. Mac muhiti tekshirildi va "Muhit → macOS"
+  qayta yozildi (M1 Pro, Homebrew Vulkan, hammasi bor). 05-dars **Mac'da** bajarilgan, build
+  bo'ladi. O'zgarishlar hali commit qilinmagan (`20d609c` dan keyin 5 ta fayl o'zgargan).
+  05 tekshirildi. Yaxshi: 04-dars tuzatishlari (nullptr tekshiruvi, `printVulkanVersion` `void`,
+  `VK_CHECK` → `::utils::vkCheck` namespace'dan tashqarida, instance/messenger `VK_CHECK` bilan),
+  destructor + xavfsiz `cleanup` (tartib to'g'ri), `= delete`/`= default`, `pickPhysicalDevice`
+  (ikki chaqiruv, `count == 0`), `findQueueFamily` (`== required`), `isDeviceSuitable`,
+  `createLogicalDevice` + `VK_KHR_portability_subset` (device kengaytmalari ro'yxatidan, o'zi
+  yozgan), 2-mashq (`utils::printQueueFamilies`, rangli), 3-mashq (shaderDemote chiqariladi),
+  5-mashq (nusxa izohi `main.cpp` da qolgan). Kamchiliklar (06-darsning 1-qadamiga berildi):
+  diskret GPU afzal ko'rilmaydi (`physicalDevice == VK_NULL_HANDLE` sharti faqat birinchisini
+  oladi) va `mos`/`mos emas` chiqmaydi; `cleanup` da `debugMessenger` null qilinmaydi;
+  `printQueueFamilies` vektorni nusxa bilan oladi va `findQueueFamily` ichida bo'lgani uchun
+  ikki marta chiqadi; `utils::isLayerAvailable` ishlatilmaydi; 1-mashq (GPU pasporti) bajarilmagan.
+  4-mashq, "ataylab xato" natijalari va "O'zingizni tekshiring" javoblari yozilmagan. Dastur
+  chiqishini (konsol) foydalanuvchi ko'rsatmagan.
+  `docs/06_surface_va_swapchain.md` yozildi. Tanlovlar: `struct SwapchainSupport` (klassdan oldin,
+  header'da); anonim namespace'da `deviceExtensions` (`VK_KHR_SWAPCHAIN_EXTENSION_NAME`) va
+  `constexpr bool enableVsync = true`; yangi a'zolar `surface`, `swapchain`, `swapchainImageFormat`,
+  `swapchainExtent`, `swapchainImages`, `swapchainImageViews`; metodlar `createSurface`,
+  `checkDeviceExtensionSupport(gpu)` (o'zi yozadi), `querySwapchainSupport(gpu)`,
+  `chooseSurfaceFormat` (`B8G8R8A8_UNORM` + `SRGB_NONLINEAR`, namunadagidek UNORM),
+  `choosePresentMode` (o'zi yozadi: vsync → FIFO, aks holda MAILBOX → IMMEDIATE → FIFO),
+  `chooseExtent` (`currentExtent`, aks holda `glfwGetFramebufferSize` + `std::clamp`),
+  `createSwapchain` (min+1, EXCLUSIVE, OPAQUE, `oldSwapchain` null), `createImageViews`.
+  `findQueueFamily` ga present support qo'shildi (surface `pickPhysicalDevice` dan oldin).
+  `cleanup` tartibi: view'lar → swapchain → device → surface → messenger → instance → window →
+  glfwTerminate. **Oyna o'lchami o'zgarishi va swapchain'ni qayta yaratish 07-darsga qoldirildi**
+  (06 dagi 4-mashq: framebuffer o'lchami `swapchainExtent` dan farq qilsa ogohlantirish).
+  Lug'atga C++ (`const T&`, `resize`, `std::clamp`, `std::numeric_limits`) va Vulkan (MoltenVK,
+  portability subset, WSI, present, surface format, present mode, extent, point/piksel, image,
+  image view, subresource range, sharing mode...) atamalari qo'shildi. 05 → 06 havolasi ulandi.
+- **2026-10-21 (Mac, keyinroq):** 06-darsning 1-qadami (05 tuzatishlari) tekshirildi. Tuzatilgan:
+  `debugMessenger` null qilinadi, `main.cpp` dagi izoh o'chirilgan, `printQueueFamilies(VkPhysicalDevice)`
+  endi o'zi so'raydi va faqat tanlangan GPU uchun bir marta chiqadi. Qolgan: `utils::isLayerAvailable`.
+  Foydalanuvchi **`isDeviceSuitable` o'rniga ball tizimini** o'ylab topdi: `int rateGpu(gpu)`
+  (apiVersion < 1.3 yoki family yo'q → 0; `dynamicRendering` +100000, `synchronization2` +100000,
+  diskret +100000; `pickPhysicalDevice` da `rate >= 200000 && rate > highScore`). Xato tushuntirildi:
+  majburiy shartlar va afzallik bitta yig'indida → diskret + bitta feature = 200000 ham o'tadi →
+  `vkCreateDevice` -8. Tavsiya: majburiy shartlar `isDeviceSuitable` ga qaytsin (rateGpu boshida
+  `if (!isDeviceSuitable(gpu)) return 0;`), ball faqat afzallik uchun, chegara `score > 0`. Shunda
+  06-darsdagi `isDeviceSuitable` qadamlari (present, `VK_KHR_swapchain`, swapchain support) o'zgarishsiz
+  ishlaydi. Foydalanuvchi tuzatishi kerak.
+- **Keyingi qadam:** foydalanuvchi 06-darsni bajarib qaytadi (Mac yoki Windows'da). Unda:
+  0. Git sinxronligi. Windows'da bo'lsa: Mac'dagi 05/06 kodi Windows'da (MinGW g++) ham build
+     bo'lishini va 06 natijalarini (formatlar, present mode'lar, min/max image count) so'rang.
+     06-darsdagi Windows jadvallari ("odatda ...") taxminiy: haqiqiy natija bilan to'g'rilang.
+  1. Tekshirish: 1-qadam tuzatishlari (diskret afzalligi, `debugMessenger` null, `const&`,
+     `printQueueFamilies` joyi, `isLayerAvailable`), surface tartibi (`pickPhysicalDevice` dan
+     oldin), present support, `checkDeviceExtensionSupport`, `enabledExtensions = deviceExtensions`,
+     `choosePresentMode`, extent Mac'da 2560x1440 chiqyaptimi, `cleanup` tartibi, mashqlar va uch
+     "ataylab xato" natijalari. Konsol chiqishini so'rang.
+  2. Keyin `docs/07_command_buffer_va_sinxronizatsiya.md`: command pool/buffer, fence va
+     semaphore'lar (frames in flight), acquire → record (dynamic rendering, `vkCmdBeginRendering`,
+     clear color, image layout o'tishlari synchronization2 bilan: `vkCmdPipelineBarrier2`) →
+     submit (`vkQueueSubmit2`) → present. Oyna rangga bo'yaladi. Swapchain'ni qayta yaratish
+     (`VK_ERROR_OUT_OF_DATE_KHR` / `SUBOPTIMAL`, framebuffer size callback + flag, minimize'da 0x0
+     kutish, `vkDeviceWaitIdle`). Mac'da present mode farqi (MAILBOX yo'q) va 120 Hz ProMotion.

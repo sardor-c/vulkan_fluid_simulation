@@ -57,6 +57,10 @@ Qavs ichida — atama birinchi marta tushuntirilgan dars.
 | **`= delete`** | Funksiyani taqiqlash. Masalan, nusxa konstruktorini o'chirib, klassni nusxalab bo'lmaydigan qilish (05) |
 | **`= default`** | Kompilyator yaratadigan standart variantni aniq so'rash, masalan `Klass() = default;` (05) |
 | **`std::optional`** | Qiymat bo'lishi yoki bo'lmasligi mumkin bo'lgan quti: `has_value()`, `value()`, `std::nullopt` (05) |
+| **`const T&` parametr** | Katta obyektni nusxasiz, faqat o'qish uchun uzatish. `std::vector`, `std::string` uchun odatiy usul (06) |
+| **`resize`** | Mavjud `std::vector` ning uzunligini o'zgartirish: `v.resize(n)` yoki `v.resize(n, qiymat)` (06) |
+| **`std::clamp`** | Sonni `[lo, hi]` oralig'iga siqish: `std::clamp(x, lo, hi)` (`<algorithm>`) (06) |
+| **`std::numeric_limits`** | Tipning chegaralari: `std::numeric_limits<uint32_t>::max()` = `0xFFFFFFFF` (`<limits>`) (06) |
 
 ## Simulatsiya va grafika
 
@@ -135,3 +139,22 @@ Qavs ichida — atama birinchi marta tushuntirilgan dars.
 | **Queue priority** | Navbatga beriladigan 0.0–1.0 ustuvorlik. Bitta navbatda ahamiyatsiz, lekin majburiy (05) |
 | **`vkGetDeviceQueue`** | Device bilan birga yaratilgan navbatning handle'ini olish. Navbat alohida yo'q qilinmaydi (05) |
 | **Async compute** | Hisob-kitobni alohida compute navbatida grafika bilan parallel bajarish. Murakkab optimizatsiya, bizda yo'q (05) |
+| **MoltenVK** | macOS'da Vulkan'ni Metal ustida ishlatuvchi qatlam ("portability" implementatsiyasi) (05) |
+| **`VK_KHR_portability_subset`** | MoltenVK kabi to'liq bo'lmagan Vulkan e'lon qiladigan device kengaytmasi. E'lon qilingan bo'lsa, yoqish majburiy (05) |
+| **WSI** | *Window System Integration*: Vulkan'ning oyna bilan ishlaydigan kengaytmalari (surface, swapchain) (06) |
+| **Present** | Tayyor rasmni oynaga (ekranga) chiqarish (06) |
+| **Present support** | Queue family shu surface'ga present qila oladimi: `vkGetPhysicalDeviceSurfaceSupportKHR` (06) |
+| **Instance / device extension** | Loader darajasidagi (`VK_KHR_surface`) / aniq GPU drayveridagi (`VK_KHR_swapchain`) kengaytma (06) |
+| **`VK_KHR_swapchain`** | Swapchain uchun device kengaytmasi. Vulkan yadrosiga kirmaydi, shuning uchun tekshirib yoqiladi (06) |
+| **Surface capabilities** | Surface chegaralari: rasmlar soni (`min/maxImageCount`), o'lcham (`currentExtent`), transform (06) |
+| **Surface format** | Piksel formati (`B8G8R8A8_UNORM`) va rang fazosi (`SRGB_NONLINEAR`) jufti (06) |
+| **UNORM / SRGB format** | 0..255 → 0.0..1.0 to'g'ridan-to'g'ri / qo'shimcha gamma konvertatsiyasi bilan (06) |
+| **Tearing** | Ekranda yarim eski, yarim yangi kadr ko'rinishi: rasm monitor o'qiyotgan paytda almashgan (06) |
+| **Present mode** | Rasmlar ekranga qanday tartibda chiqishi: `FIFO` (vsync, har doim bor), `MAILBOX`, `IMMEDIATE`, `FIFO_RELAXED` (06) |
+| **Extent** (`VkExtent2D`) | Pikseldagi o'lcham: `width`, `height` (06) |
+| **Point / piksel** | GLFW'dagi oyna o'lchami (`glfwGetWindowSize`) / haqiqiy piksellar (`glfwGetFramebufferSize`). Retina'da 1 point = 2×2 piksel (06) |
+| **Image** (`VkImage`) | GPU xotirasidagi rasm. Swapchain image'larini swapchain o'zi yaratadi va yo'q qiladi (06) |
+| **Image view** (`VkImageView`) | Image'ga qanday qarash kerakligi: tur (2D), format, qaysi qism. Vulkan image'ga doim view orqali murojaat qiladi (06) |
+| **Subresource range** | Image'ning qaysi qismi: aspect (rang/chuqurlik), mip-level'lar, qatlamlar (06) |
+| **Mip-level** | Rasmning ketma-ket 2 marta kichraytirilgan nusxalari. Swapchain'da bittasi (asl o'lcham) (06) |
+| **Sharing mode** | `EXCLUSIVE`: image'ni bir vaqtda bitta queue family ishlatadi; `CONCURRENT`: bir nechtasi (06) |
