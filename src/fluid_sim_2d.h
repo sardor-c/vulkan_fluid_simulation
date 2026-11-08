@@ -7,6 +7,10 @@
 #include <optional>
 
 
+struct SwapchainSupport{
+
+};
+
 class FluidSimulation2D {
 public:
     FluidSimulation2D() = default;
